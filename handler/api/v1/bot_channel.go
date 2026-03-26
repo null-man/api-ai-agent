@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strings"
 
 	"github.com/clawhost/clawhost/middleware"
 	"github.com/clawhost/clawhost/model"
@@ -34,6 +35,12 @@ type AddChannelRequest struct {
 	Extra map[string]interface{} `json:"extra,omitempty"`
 }
 
+type SetupTelegramChannelRequest struct {
+	Token    string `json:"token,omitempty"`
+	BotToken string `json:"botToken,omitempty"`
+	Account  string `json:"account,omitempty"`
+}
+
 // AddChannel adds an IM channel to a bot
 // POST /bots/:id/channels
 func AddChannel(c echo.Context) error {
@@ -54,6 +61,8 @@ func AddChannel(c echo.Context) error {
 	if bot.Status != model.BotStatusRunning {
 		return util.BadRequest(c, "bot is not running")
 	}
+
+	applyChannelDefaults(&req)
 
 	// Default account name
 	account := req.Account
@@ -116,6 +125,77 @@ func AddChannel(c echo.Context) error {
 		"channel": req.Channel,
 		"account": account,
 	})
+}
+
+// SetupTelegramChannel configures Telegram with sensible defaults so the frontend
+// only needs to provide a bot token.
+// POST /bots/:id/channels/telegram/setup
+func SetupTelegramChannel(c echo.Context) error {
+	bot := middleware.GetBotFromContext(c)
+	if bot == nil {
+		return util.Forbidden(c, "not authorized")
+	}
+
+	var req SetupTelegramChannelRequest
+	if err := c.Bind(&req); err != nil {
+		return util.BadRequest(c, "invalid request body")
+	}
+
+	botToken := strings.TrimSpace(req.BotToken)
+	if botToken == "" {
+		botToken = strings.TrimSpace(req.Token)
+	}
+	if botToken == "" {
+		return util.BadRequest(c, "telegram bot token is required")
+	}
+
+	if bot.Status != model.BotStatusRunning {
+		return util.BadRequest(c, "bot is not running")
+	}
+
+	account := req.Account
+	if account == "" {
+		account = "default"
+	}
+
+	configMap := map[string]interface{}{
+		"botToken":    botToken,
+		"dmPolicy":    "open",
+		"allowFrom":   []string{"*"},
+		"groupPolicy": "allowlist",
+		"enabled":     true,
+	}
+
+	if err := k8s.AddChannelToBot(context.Background(), bot.ID, bot.AccessToken, "telegram", account, configMap); err != nil {
+		return util.InternalError(c, "failed to setup telegram channel: "+err.Error())
+	}
+
+	return util.Success(c, map[string]interface{}{
+		"message": "telegram channel configured successfully",
+		"channel": "telegram",
+		"account": account,
+	})
+}
+
+func applyChannelDefaults(req *AddChannelRequest) {
+	channel := strings.ToLower(strings.TrimSpace(req.Channel))
+	if channel != "telegram" {
+		return
+	}
+
+	if req.Enabled == nil {
+		enabled := true
+		req.Enabled = &enabled
+	}
+	if req.DMPolicy == "" {
+		req.DMPolicy = "open"
+	}
+	if req.GroupPolicy == "" {
+		req.GroupPolicy = "allowlist"
+	}
+	if len(req.AllowFrom) == 0 && req.DMPolicy == "open" {
+		req.AllowFrom = []string{"*"}
+	}
 }
 
 // ListChannels lists all channels for a bot

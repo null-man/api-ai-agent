@@ -89,6 +89,7 @@ func startServer() {
 	{
 		// Bot collection routes (no ownership check needed)
 		api.POST("/bots", v1.CreateBot)
+		api.POST("/bots/provision/telegram", v1.ProvisionTelegramBot)
 		api.GET("/bots", v1.ListBots)
 	}
 
@@ -116,6 +117,7 @@ func startServer() {
 
 		// Channels management (IM integrations)
 		botAPI.POST("/channels", v1.AddChannel)
+		botAPI.POST("/channels/telegram/setup", v1.SetupTelegramChannel)
 		botAPI.GET("/channels", v1.ListChannels)
 		botAPI.DELETE("/channels/:channel", v1.RemoveChannel)
 
