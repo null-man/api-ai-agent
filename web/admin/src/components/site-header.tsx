@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 const pageTitles: Record<string, string> = {
   "/": "Apps",
   "/bots": "Bots",
+  "/debug": "Debug",
 }
 
 export function SiteHeader() {

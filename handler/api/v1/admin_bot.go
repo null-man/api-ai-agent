@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/clawhost/clawhost/model"
 	"github.com/clawhost/clawhost/service/k8s"
@@ -151,4 +152,53 @@ func AdminDeleteBot(c echo.Context) error {
 	}
 
 	return util.Success(c, map[string]string{"message": "bot deleted"})
+}
+
+type AdminGetBotDebugResponse struct {
+	Bot  *GetBotResponse `json:"bot"`
+	Pod  *k8s.PodInfo    `json:"pod,omitempty"`
+	Logs string          `json:"logs,omitempty"`
+	Tail int64           `json:"tail"`
+}
+
+// AdminGetBotDebug returns current bot status, latest pod info, and recent logs.
+func AdminGetBotDebug(c echo.Context) error {
+	botID := c.Param("id")
+	bot, err := model.GetBotByID(botID)
+	if err != nil {
+		return util.NotFound(c, "bot not found")
+	}
+
+	tail := int64(200)
+	if raw := c.QueryParam("tail"); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 {
+			return util.BadRequest(c, "tail must be a positive integer")
+		}
+		if parsed > 2000 {
+			parsed = 2000
+		}
+		tail = parsed
+	}
+
+	resp, err := buildBotResponse(context.Background(), bot)
+	if err != nil {
+		return util.InternalError(c, "failed to build bot response")
+	}
+
+	debugResp := &AdminGetBotDebugResponse{
+		Bot:  resp,
+		Tail: tail,
+	}
+
+	pod, err := k8s.GetLatestPodInfo(context.Background(), bot.ID)
+	if err == nil && pod != nil {
+		debugResp.Pod = pod
+		logs, logErr := k8s.GetPodLogs(context.Background(), pod.Name, pod.Container, tail)
+		if logErr == nil {
+			debugResp.Logs = logs
+		}
+	}
+
+	return util.Success(c, debugResp)
 }

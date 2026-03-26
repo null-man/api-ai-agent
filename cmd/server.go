@@ -187,6 +187,7 @@ func startServer() {
 		// Bot management (admin)
 		admin.POST("/bots", v1.AdminCreateBot)
 		admin.GET("/bots", v1.AdminListBots)
+		admin.GET("/bots/:id/debug", v1.AdminGetBotDebug)
 		admin.POST("/bots/:id/start", v1.AdminStartBot)
 		admin.POST("/bots/:id/stop", v1.AdminStopBot)
 		admin.DELETE("/bots/:id", v1.AdminDeleteBot)

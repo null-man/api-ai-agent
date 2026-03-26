@@ -21,12 +21,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboardIcon, BotIcon, LogOutIcon, EllipsisVerticalIcon, CircleUserRoundIcon } from "lucide-react"
+import { LayoutDashboardIcon, BotIcon, LogOutIcon, EllipsisVerticalIcon, CircleUserRoundIcon, BugIcon } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 
 const navItems = [
   { title: "Apps", href: "/", icon: <LayoutDashboardIcon /> },
   { title: "Bots", href: "/bots", icon: <BotIcon /> },
+  { title: "Debug", href: "/debug", icon: <BugIcon /> },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

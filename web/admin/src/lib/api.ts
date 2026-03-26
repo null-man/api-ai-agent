@@ -79,6 +79,31 @@ export interface Bot {
   updated_at: string;
 }
 
+export interface BotDeploymentStatus {
+  status?: string;
+  ready_replicas?: number;
+  desired_replicas?: number;
+  updated_replicas?: number;
+}
+
+export interface BotDebugData {
+  bot: Bot & {
+    deployment_status?: BotDeploymentStatus;
+    image?: string;
+    latest_image?: string;
+    image_up_to_date?: boolean;
+  };
+  pod?: {
+    name: string;
+    phase: string;
+    ready: boolean;
+    restart_count: number;
+    container: string;
+  };
+  logs?: string;
+  tail: number;
+}
+
 // App APIs
 export async function listApps() {
   return request<App[]>("/apps");
@@ -169,6 +194,10 @@ export async function upgradeAllBots() {
 
 export async function restartAllBots() {
   return request<{ message: string }>("/bots/restart", { method: "POST" });
+}
+
+export async function getBotDebug(id: string, tail = 200) {
+  return request<BotDebugData>(`/bots/${id}/debug?tail=${tail}`);
 }
 
 // Config APIs
