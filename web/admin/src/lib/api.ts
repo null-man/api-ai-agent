@@ -104,6 +104,22 @@ export interface BotDebugData {
   tail: number;
 }
 
+export interface CapacityData {
+  capacity: {
+    node_name: string;
+    allocatable_memory_bytes: number;
+    requested_memory_bytes: number;
+    remaining_memory_bytes: number;
+    allocatable_cpu_milli: number;
+    requested_cpu_milli: number;
+    remaining_cpu_milli: number;
+    bot_request_memory_bytes: number;
+    bot_request_cpu_milli: number;
+    running_bot_count: number;
+    estimated_additional_bots: number;
+  };
+}
+
 // App APIs
 export async function listApps() {
   return request<App[]>("/apps");
@@ -198,6 +214,10 @@ export async function restartAllBots() {
 
 export async function getBotDebug(id: string, tail = 200) {
   return request<BotDebugData>(`/bots/${id}/debug?tail=${tail}`);
+}
+
+export async function getCapacity() {
+  return request<CapacityData>("/debug/capacity");
 }
 
 // Config APIs

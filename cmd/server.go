@@ -175,6 +175,7 @@ func startServer() {
 				},
 			})
 		})
+		admin.GET("/debug/capacity", v1.AdminGetCapacity)
 
 		// App management
 		admin.POST("/apps", v1.CreateApp)

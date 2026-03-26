@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getBotDebug, listBots, type Bot, type BotDebugData } from "@/lib/api";
+import { getBotDebug, getCapacity, listBots, type Bot, type BotDebugData, type CapacityData } from "@/lib/api";
 
 const statusStyles: Record<string, string> = {
   running: "bg-green-100 text-green-700 border-green-200",
@@ -25,6 +25,7 @@ export default function DebugPage() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [loadingBots, setLoadingBots] = useState(true);
   const [loadingDebug, setLoadingDebug] = useState(false);
+  const [capacity, setCapacity] = useState<CapacityData["capacity"] | null>(null);
   const [selectedBotId, setSelectedBotId] = useState("");
   const [tail, setTail] = useState("200");
   const [query, setQuery] = useState("");
@@ -43,9 +44,10 @@ export default function DebugPage() {
   const fetchBots = useCallback(async () => {
     try {
       setLoadingBots(true);
-      const res = await listBots();
-      const nextBots = res.data || [];
+      const [botsRes, capacityRes] = await Promise.all([listBots(), getCapacity()]);
+      const nextBots = botsRes.data || [];
       setBots(nextBots);
+      setCapacity(capacityRes.data.capacity);
       if (!selectedBotId && nextBots.length > 0) {
         setSelectedBotId(nextBots[0].id);
       }
@@ -99,6 +101,36 @@ export default function DebugPage() {
           View current bot health, latest pod, restart count, and recent runtime logs.
         </p>
       </div>
+
+      {capacity && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Capacity Estimate</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase text-muted-foreground">Estimated Additional Bots</p>
+              <p className="text-2xl font-semibold">{capacity.estimated_additional_bots}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-muted-foreground">Running Bots</p>
+              <p className="font-medium">{capacity.running_bot_count}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-muted-foreground">Per Bot Request</p>
+              <p className="font-medium">
+                {Math.round(capacity.bot_request_memory_bytes / 1024 / 1024)}Mi / {capacity.bot_request_cpu_milli}m
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-muted-foreground">Remaining Request Budget</p>
+              <p className="font-medium">
+                {Math.round(capacity.remaining_memory_bytes / 1024 / 1024)}Mi / {capacity.remaining_cpu_milli}m
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-4">
