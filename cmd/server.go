@@ -91,6 +91,8 @@ func startServer() {
 		api.POST("/bots", v1.CreateBot)
 		api.POST("/bots/provision/telegram", v1.ProvisionTelegramBot)
 		api.GET("/bots", v1.ListBots)
+		api.GET("/bots/by-user/:user_id", v1.GetLatestBotByUser)
+		api.GET("/bots/by-user/:user_id/debug", v1.GetLatestBotDebugByUser)
 	}
 
 	// Bot instance routes: require ownership validation
