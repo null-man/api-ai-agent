@@ -4,6 +4,7 @@ metadata:
   name: {{ include "clawhost.fullname" . }}
   labels:
     {{- include "clawhost.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
   replicas: {{ .Values.server.replicas }}
   selector:
@@ -13,6 +14,7 @@ spec:
     metadata:
       labels:
         {{- include "clawhost.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
     spec:
       serviceAccountName: {{ include "clawhost.fullname" . }}
       {{- if .Values.postgresql.enabled }}

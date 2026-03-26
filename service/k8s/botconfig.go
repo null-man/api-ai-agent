@@ -572,27 +572,30 @@ func buildProvidersJSON(config *BotConfig) string {
 
 // getDefaultModelFromConfig returns the default model ID from config
 func getDefaultModelFromConfig(config *BotConfig) string {
-	// Check AgentDefaults first
-	if config.AgentDefaults != nil && config.AgentDefaults.PrimaryModel != "" {
-		return config.AgentDefaults.PrimaryModel
-	}
+    if config == nil {
+        return "anthropic/claude-sonnet-4-20250514"
+    }
 
-	// If we have providers, use the first provider's first model
-	if len(config.Providers) > 0 {
-		p := config.Providers[0]
-		if len(p.Models) > 0 {
-			return fmt.Sprintf("%s/%s", p.Name, p.Models[0].ID)
-		}
-	}
+    // Highest priority: explicit agent defaults
+    if config.AgentDefaults != nil && config.AgentDefaults.PrimaryModel != "" {
+        return config.AgentDefaults.PrimaryModel
+    }
 
-	// Fallback to legacy fields
-	if config.Model != "" {
-		providerName := getProviderName(config.Provider, config.BaseURL)
-		return fmt.Sprintf("%s/%s", providerName, config.Model)
-	}
+    // Next: first configured provider/model
+    if len(config.Providers) > 0 {
+        p := config.Providers[0]
+        if len(p.Models) > 0 {
+            return fmt.Sprintf("%s/%s", p.Name, p.Models[0].ID)
+        }
+    }
 
-	// Default
-	return "anthropic/claude-sonnet-4-20250514"
+    // Legacy compatibility fields
+    if config.Model != "" {
+        providerName := getProviderName(config.Provider, config.BaseURL)
+        return fmt.Sprintf("%s/%s", providerName, config.Model)
+    }
+
+    return "anthropic/claude-sonnet-4-20250514"
 }
 
 // getAuthOrDefault returns the auth value or default "api-key"
@@ -605,14 +608,18 @@ func getAuthOrDefault(auth string) string {
 
 // getAPIOrDefault returns the API value or default based on provider
 func getAPIOrDefault(api, provider string) string {
-	if api != "" {
-		return api
-	}
-	// Default based on provider
-	if provider == "openai" {
-		return "openai-completions"
-	}
-	return "anthropic-messages"
+    if api != "" {
+        return api
+    }
+
+    switch provider {
+    case "openai":
+        return "openai-completions"
+    case "minimax":
+        return "openai-completions"
+    default:
+        return "anthropic-messages"
+    }
 }
 
 // BuildGatewayConfig builds the minimal gateway config for initial startup
