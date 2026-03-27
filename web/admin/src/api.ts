@@ -64,13 +64,6 @@ export interface App {
 }
 
 // Bot types
-export interface BotChannelSummary {
-  channel: string;
-  account?: string;
-  status?: string;
-  enabled?: boolean;
-}
-
 export interface Bot {
   id: string;
   app_id: string;
@@ -84,15 +77,6 @@ export interface Bot {
   expires_at: string | null;
   created_at: string;
   updated_at: string;
-  deployment_status?: BotDeploymentStatus;
-  image?: string;
-  latest_image?: string;
-  image_up_to_date?: boolean;
-  bot_url?: string;
-  access_url?: string;
-  provider?: string;
-  model_name?: string;
-  channels?: BotChannelSummary[];
 }
 
 export interface BotDeploymentStatus {
@@ -136,44 +120,6 @@ export interface CapacityData {
   };
 }
 
-export interface ProvisionSettingsData {
-  provision: {
-    model: {
-      provider: string;
-      id: string;
-      base_url: string;
-      api: string;
-      auth: string;
-      api_key: string;
-    };
-    telegram: {
-      dm_policy: string;
-      group_policy: string;
-    };
-    providers?: ProvisionProviderEntry[];
-  };
-}
-
-export interface ProvisionProviderEntry {
-  name: string;
-  id: string;
-  base_url: string;
-  api: string;
-  auth: string;
-  api_key: string;
-  is_default?: boolean;
-}
-
-export interface ProvisionProvidersData {
-  providers: ProvisionProviderEntry[];
-}
-
-export interface ProviderTestData {
-  success: boolean;
-  status_code: number;
-  message?: string;
-  raw_body?: string;
-}
 // App APIs
 export async function listApps() {
   return request<App[]>("/apps");
@@ -270,51 +216,8 @@ export async function getBotDebug(id: string, tail = 200) {
   return request<BotDebugData>(`/bots/${id}/debug?tail=${tail}`);
 }
 
-export async function updateBotProvider(id: string, provider_name: string) {
-  return request<Bot>(`/bots/${id}/provider`, {
-    method: "PUT",
-    body: JSON.stringify({ provider_name }),
-  });
-}
-
 export async function getCapacity() {
   return request<CapacityData>("/debug/capacity");
-}
-
-export async function getProvisionSettings() {
-  return request<ProvisionSettingsData>("/settings/provision");
-}
-
-export async function updateProvisionSettings(data: ProvisionSettingsData) {
-  return request<ProvisionSettingsData>("/settings/provision", {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-}
-
-export async function listProvisionProviders() {
-  return request<ProvisionProvidersData>("/settings/providers");
-}
-
-export async function saveProvisionProvider(data: {
-  name: string;
-  id: string;
-  base_url: string;
-  api: string;
-  auth: string;
-  api_key: string;
-  set_default?: boolean;
-}) {
-  return request<{ message: string; provider: ProvisionProviderEntry; set_default: boolean }>("/settings/providers", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export async function testProvisionProvider(name: string) {
-  return request<ProviderTestData>(`/settings/providers/${encodeURIComponent(name)}/test`, {
-    method: "POST",
-  });
 }
 
 // Config APIs

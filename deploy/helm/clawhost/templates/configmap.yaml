@@ -42,6 +42,18 @@ data:
     cpu_request = {{ .Values.openclaw.cpuRequest | quote }}
     memory_request = {{ .Values.openclaw.memoryRequest | quote }}
 
+    [provision.model]
+    provider = {{ .Values.provision.model.provider | quote }}
+    id = {{ .Values.provision.model.id | quote }}
+    base_url = {{ .Values.provision.model.baseUrl | quote }}
+    api = {{ .Values.provision.model.api | quote }}
+    auth = {{ .Values.provision.model.auth | quote }}
+    api_key = {{ .Values.provision.model.apiKey | quote }}
+
+    [provision.telegram]
+    dm_policy = {{ .Values.provision.telegram.dmPolicy | quote }}
+    group_policy = {{ .Values.provision.telegram.groupPolicy | quote }}
+
     {{- if .Values.chatclaw.image }}
     [chatclaw]
     image = {{ .Values.chatclaw.image | quote }}

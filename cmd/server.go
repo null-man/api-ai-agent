@@ -175,6 +175,11 @@ func startServer() {
 				},
 			})
 		})
+		admin.GET("/settings/provision", v1.AdminGetProvisionSettings)
+		admin.PUT("/settings/provision", v1.AdminUpdateProvisionSettings)
+		admin.GET("/settings/providers", v1.AdminListProvisionProviders)
+		admin.POST("/settings/providers", v1.AdminUpsertProvisionProvider)
+		admin.POST("/settings/providers/:name/test", v1.AdminTestProvisionProvider)
 		admin.GET("/debug/capacity", v1.AdminGetCapacity)
 
 		// App management
@@ -189,6 +194,7 @@ func startServer() {
 		admin.POST("/bots", v1.AdminCreateBot)
 		admin.GET("/bots", v1.AdminListBots)
 		admin.GET("/bots/:id/debug", v1.AdminGetBotDebug)
+		admin.PUT("/bots/:id/provider", v1.AdminSetBotProvider)
 		admin.POST("/bots/:id/start", v1.AdminStartBot)
 		admin.POST("/bots/:id/stop", v1.AdminStopBot)
 		admin.DELETE("/bots/:id", v1.AdminDeleteBot)

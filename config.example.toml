@@ -41,6 +41,18 @@ memory_limit = "8Gi"
 cpu_request = "500m"
 memory_request = "1Gi"
 
+[provision.model]
+provider = "minimax"
+id = "MiniMax-M2.5-highspeed"
+base_url = "https://api.minimax.io/v1"
+api = "openai-completions"
+auth = "api-key"
+api_key = "your-model-api-key"
+
+[provision.telegram]
+dm_policy = "open"
+group_policy = "allowlist"
+
 # ChatClaw WebUI (optional, uncomment to enable)
 # When enabled, ChatClaw is deployed as a sidecar alongside OpenClaw in each bot pod.
 # When disabled (default), OpenClaw's built-in WebUI is used.

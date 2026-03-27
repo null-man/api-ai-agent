@@ -17,6 +17,18 @@ type GetBotResponse struct {
 	Image            string                    `json:"image,omitempty"`
 	LatestImage      string                    `json:"latest_image,omitempty"`
 	ImageUpToDate    *bool                     `json:"image_up_to_date,omitempty"`
+	BotURL           string                    `json:"bot_url,omitempty"`
+	AccessURL        string                    `json:"access_url,omitempty"`
+	Provider         string                    `json:"provider,omitempty"`
+	ModelName        string                    `json:"model_name,omitempty"`
+	Channels         []BotChannelSummary       `json:"channels,omitempty"`
+}
+
+type BotChannelSummary struct {
+	Channel string `json:"channel"`
+	Account string `json:"account,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Enabled *bool  `json:"enabled,omitempty"`
 }
 
 func GetBot(c echo.Context) error {

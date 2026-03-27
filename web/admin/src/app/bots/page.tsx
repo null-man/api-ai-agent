@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +59,11 @@ import {
   upgradeBot,
   upgradeAllBots,
   restartAllBots,
+  listProvisionProviders,
+  updateBotProvider,
   type App,
   type Bot,
+  type ProvisionProviderEntry,
 } from "@/lib/api";
 
 const statusStyles: Record<string, string> = {
@@ -147,16 +150,33 @@ export default function BotsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", app_id: "", user_id: "" });
+  const [providers, setProviders] = useState<ProvisionProviderEntry[]>([]);
+  const [botProviderDrafts, setBotProviderDrafts] = useState<Record<string, string>>({});
+  const [providerSavingId, setProviderSavingId] = useState<string | null>(null);
+
+  const sortedProviders = useMemo(
+    () => [...providers].sort((a, b) => a.name.localeCompare(b.name)),
+    [providers]
+  );
 
   const fetchBots = useCallback(async () => {
     try {
       setLoading(true);
-      const [botsRes, appsRes, configRes] = await Promise.all([
+      const [botsRes, appsRes, configRes, providersRes] = await Promise.all([
         listBots(),
         listApps(),
         getAdminConfig(),
+        listProvisionProviders(),
       ]);
-      setBots(botsRes.data || []);
+      const nextBots = botsRes.data || [];
+      setBots(nextBots);
+      setProviders(providersRes.data.providers || []);
+      setBotProviderDrafts(
+        nextBots.reduce<Record<string, string>>((acc, bot) => {
+          acc[bot.id] = bot.provider || "";
+          return acc;
+        }, {})
+      );
       const map: Record<string, App> = {};
       for (const app of appsRes.data || []) {
         map[app.id] = app;
@@ -251,6 +271,66 @@ export default function BotsPage() {
     }
   };
 
+
+  const handleProviderSave = async (bot: Bot) => {
+    const providerName = botProviderDrafts[bot.id] || bot.provider || "";
+    if (!providerName) {
+      toast.error("Please select a provider first");
+      return;
+    }
+    try {
+      setProviderSavingId(bot.id);
+      await updateBotProvider(bot.id, providerName);
+      toast.success(`Provider updated for ${bot.name}`);
+      await fetchBots();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setProviderSavingId(null);
+    }
+  };
+
+  const getDraftProvider = (bot: Bot) => botProviderDrafts[bot.id] || bot.provider || "";
+
+  const renderProviderEditor = (bot: Bot) => (
+    <div className="space-y-2 min-w-[220px]">
+      <Select
+        value={getDraftProvider(bot) || undefined}
+        onValueChange={(value) => {
+          if (!value) return;
+          setBotProviderDrafts((prev) => ({
+            ...prev,
+            [bot.id]: value,
+          }));
+        }}
+        disabled={providerSavingId === bot.id || sortedProviders.length === 0}
+      >
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue placeholder={sortedProviders.length === 0 ? "No providers" : "Select provider"} />
+        </SelectTrigger>
+        <SelectContent>
+          {sortedProviders.map((provider) => (
+            <SelectItem key={provider.name} value={provider.name}>
+              {provider.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={() => handleProviderSave(bot)}
+          disabled={providerSavingId === bot.id || sortedProviders.length === 0 || !getDraftProvider(bot)}
+        >
+          {providerSavingId === bot.id ? "Saving..." : "Apply"}
+        </Button>
+        <span className="text-xs text-muted-foreground truncate">{bot.model_name || "No model"}</span>
+      </div>
+    </div>
+  );
+
   if (!isAuthed) return null;
 
   const runningCount = bots.filter((b) => b.status === "running").length;
@@ -308,6 +388,7 @@ export default function BotsPage() {
                   <TableHead>App ID</TableHead>
                   <TableHead>User ID</TableHead>
                   <TableHead>Domain</TableHead>
+                  <TableHead>Provider</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
@@ -342,6 +423,7 @@ export default function BotsPage() {
                         <code className="text-xs text-muted-foreground">{getBotDomain(bot)}</code>
                       )}
                     </TableCell>
+                    <TableCell>{renderProviderEditor(bot)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusStyles[bot.status] || ""}>
                         {bot.status}
@@ -417,6 +499,10 @@ export default function BotsPage() {
                       <span className="text-foreground/50">Created</span>
                       <p>{new Date(bot.created_at).toLocaleDateString()}</p>
                     </div>
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-xs text-foreground/50">Provider</span>
+                    <div className="mt-1">{renderProviderEditor(bot)}</div>
                   </div>
                 </CardContent>
               </Card>
